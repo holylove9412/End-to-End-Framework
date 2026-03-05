@@ -1,0 +1,117 @@
+# Data settings
+network: 'study_area'
+use_saved_training_windows  : True
+use_saved_validation_windows: True
+
+# Hot start options
+## Names of saved windows in saved objects/saved windows/{network}/ in pickle format.
+training_windows_names:
+  - 'study_area_tra_windows_9be_2ah_40_events.pk'
+  - 'study_area_tra_windows_9be_10ah_40_events.pk'
+validation_windows_name : 'study_area_val_windows_9be_50ah_29_events.pk'
+
+use_training_simulations: True
+use_validation_simulations: True
+use_testing_simulations: True
+## Use of Transfer Learning
+use_pre_trained_weights: False
+requires_freezing:  True
+pre_trained_weights: 'best_model_realdata_11layer_24nodes_50%.pt' #If use_pre_trained_weights is false, this line is ignored
+
+use_trained_weights: True
+trained_weights: 'best_model_realdata_11layer_24nodes_50%.pt' ##best_model1,12nodes,eval results 0.674,0.704,3 train
+
+use_saved_normalizer: True
+saved_normalizer_name: "normalizer_development_study_area.pk"
+normalizer_name: "Normalizer"
+
+use_saved_normalized_windows_dataset: True
+saved_normalized_training_dataset_name: "study_area_normalized_training_dataset.pk"
+saved_normalized_validation_dataset_name: "study_area_normalized_validation_dataset.pk"
+
+# Training settings
+trainer_name: 'Trainer_Heads'
+node_loss_weight: 1
+edge_loss_weight: 1
+
+abs_flows: False
+
+#Hyperparameters
+epochs                 : 500
+switch_epoch           : 50       # After this epoch, the length of the training window increases. This is for curriculum learning.
+
+min_expected_loss      : 100      # Expected minimum validation loss. It prevents continue training Reconstruction_models that diverged.
+
+balance_ratio          : 0.5
+batch_size             : 16
+edge_input_list        : 'length,diameter,node_slope, conduit_slope,aprox_conduit_volume,in_offset,out_offset' #aprox_conduit_volume,
+gamma_loss             : 1.00
+gamma_scheduler        : 1.00
+hidden_dim             : 64
+learning_rate          : 0.00025
+base_model_name        : "NN_GINEConv_NN"   #"NN_GINEConv_NN"
+model_name             : Transformer_GINEConv_NN # "Transformer_GINEConv_NN"
+n_hidden_layers        : 1
+n_gcn_layers           : 11
+non_linearity          : "PReLU"
+num_events_training    : 70
+num_events_validation  : 20
+num_events_testing     : 10
+
+prediction_steps       : 1
+seed                   : 5
+skip_alpha             : 0.8
+steps_behind           : 24
+steps_ahead            :
+  - 6
+  - 12
+steps_ahead_validation : 12
+weight_decay           : 0.01
+variance_threshold     : 0.05
+monitored_nodes        : [195] #[31,2,268,108,50,97,249,370,297,347,250,403,78,302,34,151,107,299,211] #[54,187,104,202,335,298]
+#[77,158,92,344,214,189,59,86,357,27,199,226,318,310,135,167,115,47] nse>0.5: 0.889
+#baseline_sensors nse>0.5 0.729 nse>0 0.7652 [71, 65, 230, 312, 337, 244, 135, 341, 343, 242, 263, 219, 181, 259, 349, 339, 194, 246, 301, 303, 342, 306, 340, 236]
+#initail_model nse>0.5 0.884 nse>0 0.9282 [194,1,302,337,104,203,126,326,206,47,190,150,155,48,81,158,258,105,253,55,226,141,225,93] #[54,187,104,202,335,298] #0,218
+
+#nse>0.5 0.903 nse>0 0.9419 [256, 3, 38, 16, 127, 323, 240, 270, 47, 101, 346, 171, 141, 226, 290, 17, 263, 194, 48, 105, 92, 302, 160, 20]
+#egae1_model_2layer nse>0.5 0.837 nse>0 0.8757 [55, 299, 247, 336, 121, 78, 217, 178, 200, 324, 265, 96, 354, 187, 231, 239, 342, 31, 125, 14, 295, 140, 320, 101]
+#egae1_model_3layer nse>0.5 0.848 nse>0 0.8812 [97, 227, 244, 53, 49, 259, 127, 180, 331, 144, 341, 110, 293, 135, 22, 264, 31, 166, 3, 4, 187, 191, 232, 305]
+
+#information-based
+#egae1_model_3layer (inforbased>kmeans) nse>0.5 0.862 nsr>0 0.9033 [108, 346, 264, 260, 155, 19, 332, 189, 93, 312, 57, 321, 290, 121, 30, 240, 153, 234, 203, 83, 115, 327, 358, 163]
+#egae1_model_4layer (inforbased>kmeans) nse>0.5 909 nse>0 0.9337 [211, 307, 0, 181, 119, 44, 214, 99, 58, 339, 30, 330, 230, 310, 51, 93, 245, 352, 126, 274, 21, 14, 27, 350]
+#egae1_model_5layer （inforbased>k-means) nse>0.5 0.903 nse>0 0.9309 [177, 261, 76, 327, 62, 269, 17, 315, 273, 81, 188, 7, 348, 306, 105, 293, 33, 226, 114, 335, 210, 352, 206, 211]
+#egae1_model_6layer （inforbased>k-means) nse>0.5 0.917 nse>0 0.9309 [270, 36, 297, 75, 185, 354, 20, 1, 59, 67, 324, 285, 43, 136, 217, 251, 350, 274, 302, 4, 115, 209, 319, 51]
+#egae1_model_7layer （inforbased>k-means) nse>0.5 0.867 nse>0 0.9171 [122, 134, 165, 292, 286, 239, 257, 58, 333, 81, 312, 110, 118, 6, 42, 173, 187, 229, 29, 348, 56, 35, 266, 327]
+#egae1_model_8layer （inforbased>k-means) nse>0.5 0.898 nse>0 0.9392 [146, 58, 87, 191, 4, 290, 70, 122, 112, 106, 24, 283, 31, 41, 2, 354, 21, 318, 256, 56, 343, 212, 328, 85]
+#egae1_model_9layer （inforbased>k-means) nse>0.5 0.920 nse>0 0.9558 [47, 228, 186, 61, 4, 157, 301, 192, 197, 139, 20, 26, 63, 317, 310, 43, 331, 343, 352, 31, 161, 256, 96, 304]
+#egae1_model_10layer （inforbased>k-means) nse>0.5 0.901 nse>0 0.9365 [126, 108, 337, 61, 154, 6, 179, 245, 265, 35, 226, 158, 299, 74, 343, 44, 14, 352, 70, 279, 213, 30, 355, 225]
+#egae1_model_11layer （inforbased>k-means) nse>0.5 0.884 nse>0 0.9199 [36, 58, 357, 300, 174, 323, 112, 292, 214, 24, 104, 85, 25, 333, 184, 343, 318, 229, 6, 341, 136, 109, 242, 276]
+#egae1_model_12layer （inforbased>k-means) nse>0.5 0.898 nse>0 0.9227 [196, 282, 3, 239, 67, 311, 24, 28, 223, 9, 266, 298, 106, 180, 331, 190, 251, 20, 165, 347, 144, 156, 322, 108]
+#egae1_model_13layer （inforbased>k-means) nse>0.5 0.881 nse>0 0.9309 [33, 75, 137, 177, 208, 77, 205, 26, 89, 252, 21, 201, 183, 354, 162, 59, 68, 101, 232, 215, 128, 5, 299, 227]
+
+#K-means
+#GINEConv_model_1layer (k-means>inforbased) nse>0.5 0.917 nse>0 0.9530 [117, 305, 342, 250, 70, 135, 238, 209, 124, 87, 268, 317, 5, 349, 46, 30, 280, 248, 286, 323, 201, 109, 59, 136]
+
+#GINEConv_model_1layer (k-means>inforbased) nse>0.5 0.873 nse>0 0.9061 [9, 186, 291, 192, 19, 341, 65, 100, 172, 332, 130, 213, 227, 41, 146, 312, 31, 200, 25, 118, 265, 24, 231, 322]
+#GINEConv_model_2layer (k-means>inforbased) NSE>0.5: 0.886740, NSE>0: 0.914365 [168, 201, 319, 152, 186, 272, 49, 89, 226, 135, 57, 94, 42, 123, 245, 180, 79, 10, 182, 311, 210, 159, 138, 303]
+#GINEConv_model_3layer (k-means>inforbased) nse>0.5 0.818 nse>0 0.8370 [217, 24, 175, 133, 318, 85, 46, 344, 332, 156, 89, 157, 289, 14, 248, 167, 278, 63, 68, 307, 50, 32, 265, 308]
+#GINEConv_model_4layer (k-means>inforbased) nse>0.5 0.867 nse>0 0.8840 [61, 248, 266, 149, 139, 219, 226, 122, 277, 328, 14, 346, 96, 350, 320, 236, 357, 311, 345, 296, 29, 46, 332, 5]
+#GINEConv_model_5layer (k-means>inforbased) nse>0.5 0.936 nse>0 0.9807 [70, 260, 21, 310, 166, 149, 121, 133, 78, 92, 271, 200, 342, 90, 22, 229, 59, 202, 329, 14, 347, 263, 319, 290]
+
+#GINEConv_model_11layer (k-means>inforbased) nse>0.5 0.912 nse>0 0.9420 [58, 70, 22, 47, 347, 75, 120, 341, 289, 19, 30, 173, 270, 248, 4, 12, 146, 306, 263, 229, 84, 123, 332, 212] [186, 62, 251, 27, 134, 161, 83, 209, 281, 331, 351, 4, 34, 64, 318, 12, 26, 151, 304, 106, 125, 263, 223, 178]
+#GINEConv_model_5layer (k-means>inforbased) nse>0.5 0.939 nse>0 0.9613 [157, 194, 221, 186, 324, 218, 70, 133, 230, 79, 9, 30, 123, 16, 64, 266, 306, 275, 293, 350, 262, 49, 193, 319]
+#without degree GINEConv_model_5layer (k-means>inforbased) nse>0.5 0.887 nse>0 0.9254 [94, 135, 346, 349, 64, 296, 260, 123, 82, 9, 49, 263, 333, 177, 234, 62, 327, 50, 115, 12, 32, 251, 306, 319]
+
+#GINEConv_model_5layer (k-means>inforbased) nse>0.5 0.903 nse>0 0.9337 [84, 140, 89, 272, 64, 230, 157, 113, 218, 330, 30, 46, 266, 260, 186, 278, 221, 209, 306, 16, 70, 350, 6, 316]
+
+#GINEConv_model_5layer (k-means>inforbased) nse>0.5 0.876 nse>0 0.9088 [216, 177, 24, 211, 243, 172, 131, 132, 287, 63, 3, 323, 167, 44, 38, 29, 264, 83, 173, 10, 241, 306, 290, 197]
+# GNN specific hyperparameters
+k_hops                 : 1
+eps_gnn                : 0.5
+
+# Results
+nodes_to_plot:
+  - "J04030201020700699148"
+  - "J04030201020700699595"
+  - "J04030201020700709697"
