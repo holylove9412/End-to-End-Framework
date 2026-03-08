@@ -156,7 +156,6 @@ class Backbone:
         self.k_hops = self.config["k_hops"]
         self.eps_gnn = self.config["eps_gnn"]
 
-        self.nodes_to_plot = self.config["nodes_to_plot"]
 
     def _define_data_paths(self):
         self.training_simulations_path = (

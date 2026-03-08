@@ -8,7 +8,7 @@ from UtilisSet.Reconstruction_models.Transformer_CNN import FusedCNNTransformer
 from UtilisSet.Reconstruction_models.Layers import FullyConnectedNN
 
 
-class EPDBaseModel_with_elevation(nn.Module):
+class BaseModel(nn.Module):
 
     def forward(self, win):
         win = copy.deepcopy(win)
@@ -147,11 +147,11 @@ class EPDBaseModel_with_elevation(nn.Module):
         return f"{self.__class__.__name__}"
 
 
-class Transformer_GINEConv_NN(EPDBaseModel_with_elevation):
+class Edge_STGCN(BaseModel):
     def __init__(
         self, steps_behind, hidden_dim, skip_alpha, prediction_steps=1, **kwargs
     ):
-        super(Transformer_GINEConv_NN, self).__init__()
+        super(Edge_STGCN, self).__init__()
         self.aggregation_type = "Separated"
 
         self.steps_behind = steps_behind
@@ -221,102 +221,3 @@ class Transformer_GINEConv_NN(EPDBaseModel_with_elevation):
                 "nodeDecoder": self._nodeDecoder,
             }
         )
-class TransferModel(nn.Module):
-    def __init__(self, base_model, steps_behind, hidden_dim, skip_alpha, prediction_steps=1, **kwargs):
-        super(TransferModel, self).__init__()
-        self.base = base_model
-        # 冻结 base_model 的参数
-        for param in self.base.parameters():
-            param.requires_grad = False
-        self.steps_behind = steps_behind
-        self.hidden_dim = hidden_dim
-
-        self.skip_alpha = nn.Parameter(torch.tensor(skip_alpha))
-        self.non_linearity = kwargs["non_linearity"]
-        self.n_hidden_layers = kwargs["n_hidden_layers"]
-        self.n_gcn_layers = kwargs["n_gcn_layers"]
-        self.eps_gnn = kwargs["eps_gnn"]
-        self.edge_input_list = kwargs["edge_input_list"]
-        self.number_edge_inputs = len(self.edge_input_list)
-        self.gru = nn.GRU(hidden_dim,hidden_dim,2,batch_first=True)
-
-        self.create_layers_dict()
-
-    def create_layers_dict(self):
-        self._nodeEncoder = FullyConnectedNN(
-            self.steps_behind,
-            self.hidden_dim,
-            self.hidden_dim,
-            self.n_hidden_layers,
-            with_bias=True,
-            non_linearity=self.non_linearity,
-        )
-        self._edgeEncoder = FullyConnectedNN(
-            self.number_edge_inputs,
-            self.hidden_dim,
-            self.hidden_dim,
-            self.n_hidden_layers,
-            with_bias=True,
-            non_linearity=self.non_linearity,
-        )
-
-        _mlp_for_gineconv = FullyConnectedNN(
-            self.hidden_dim,
-            self.hidden_dim,
-            self.hidden_dim,
-            self.n_hidden_layers,
-            with_bias=True,
-            non_linearity=self.non_linearity,
-        )
-
-        self._processor = GINEConv(
-            _mlp_for_gineconv, eps=self.eps_gnn, train_eps=True
-        )  # .jittable()
-
-        self._nodeDecoder = FullyConnectedNN(
-            self.hidden_dim,
-            self.steps_behind,
-            self.hidden_dim,
-            self.n_hidden_layers,
-            with_bias=True,
-            non_linearity=self.non_linearity,
-            final_bias=False,
-        )
-
-        self.layers_dict = nn.ModuleDict(
-            {
-                "nodeEncoder": self._nodeEncoder,
-                "edgeEncoder": self._edgeEncoder,
-                "processor": self._processor,
-                "nodeDecoder": self._nodeDecoder,
-            }
-        )
-    def count_parameters(self):
-        return sum(p.numel() for p in self.parameters() if p.requires_grad)
-    def _add_skip_connection(self, win, h0, transformed_x):
-        elevation = win.norm_elevation.expand(-1,h0.size(-1))
-        prev_y = h0 - elevation
-        pred_y_skipped = (
-            self.skip_alpha * transformed_x + (1.0 - self.skip_alpha) * prev_y
-        )
-        pred_head = pred_y_skipped + elevation
-        return pred_head
-
-    def forward(self, win):
-        with torch.no_grad():
-            base_out = self.base(win)  # shape: (B*N, T)
-        edge_attr = torch.nan_to_num(win.edge_attr, nan=0.0)
-        coded_x = self.layers_dict["nodeEncoder"](base_out)
-        coded_e = self.layers_dict["edgeEncoder"](edge_attr)
-        process_x = self.layers_dict["processor"](coded_x,win.edge_index,coded_e)
-        out,_=self.gru(process_x)
-        out = self.layers_dict["nodeDecoder"](out)
-        T = out.size(-1)
-        h0 = win.x[:,-T:]
-        ground_level = win.node_attr[:,-2:-1]
-        win['norm_elevation'] = win.node_attr[:,-1:]
-        pred_head = self._add_skip_connection(win, base_out, out)
-
-        pred_head_clipped = torch.min(pred_head, ground_level)
-        pred_head_lower_clipped = torch.max(pred_head_clipped, win.norm_elevation)
-        return pred_head_lower_clipped

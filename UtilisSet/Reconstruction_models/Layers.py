@@ -1,8 +1,6 @@
 
 import torch
 import torch.nn as nn
-
-
 class FullyConnectedNN(nn.Module):
     def __init__(
         self,
